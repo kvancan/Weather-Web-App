@@ -1,0 +1,11 @@
+{
+    "name": "kvanc/kvanc",
+    "authors": [
+        {
+            "name": "Kvanc"
+        }
+    ],
+    "require": {
+        "vlucas/phpdotenv": "^5.6"
+    }
+}
