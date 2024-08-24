@@ -1,14 +1,56 @@
 <?php
+
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+
 require __DIR__ . '/vendor/autoload.php';
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 $key = $_ENV["KEY"];
 
-if (isset($_GET['location'])) {
+function get_client_ip() {
+    $ipaddress = '';
+    if (getenv('HTTP_CLIENT_IP'))
+        $ipaddress = getenv('HTTP_CLIENT_IP');
+    else if(getenv('HTTP_X_FORWARDED_FOR'))
+        $ipaddress = getenv('HTTP_X_FORWARDED_FOR');
+    else if(getenv('HTTP_X_FORWARDED'))
+        $ipaddress = getenv('HTTP_X_FORWARDED');
+    else if(getenv('HTTP_FORWARDED_FOR'))
+        $ipaddress = getenv('HTTP_FORWARDED_FOR');
+    else if(getenv('HTTP_FORWARDED'))
+       $ipaddress = getenv('HTTP_FORWARDED');
+    else if(getenv('REMOTE_ADDR'))
+        $ipaddress = getenv('REMOTE_ADDR');
+    else
+        $ipaddress = 'UNKNOWN';
+    return $ipaddress;
+}
+$ip = get_client_ip();
 $curl = curl_init();
+if ($ip == '127.0.0.1'){
+	$ip = '85.99.172.168';
+}
 
-$location = $_GET['location'] ?? '';
+
+curl_setopt_array($curl, array(
+  CURLOPT_URL => 'https://get.geojs.io/v1/ip/geo/'.$ip.'.json',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => '',
+  CURLOPT_MAXREDIRS => 10,
+  CURLOPT_TIMEOUT => 0,
+  CURLOPT_FOLLOWLOCATION => true,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+  CURLOPT_CUSTOMREQUEST => 'GET',
+));
+
+$response = curl_exec($curl);
+curl_close($curl);
+$value = json_decode($response, true); 
+
+$location = ($value['region']);
+
 
 curl_setopt_array($curl, array(
   CURLOPT_URL => 'http://dataservice.accuweather.com/locations/v1/cities/search?apikey='.$key.'&q='.$location,
@@ -40,6 +82,7 @@ curl_setopt_array($curl, array(
 
 $response = curl_exec($curl);
 
+
 curl_close($curl);
 $value = json_decode($response, true);
 $Minimum = ($value['DailyForecasts'][0]['Temperature']['Minimum']['Value']);
@@ -49,9 +92,6 @@ $Comment = ($value['Headline']['Text']);
 $Category = ($value['Headline']['Category']);
 
 convert($Temperature);
-
-}
-
 
 function convert($Temperature){
     $celcius = ($Temperature-32)/1.8;
@@ -115,6 +155,7 @@ $currentDate = date('l, F j, Y');
 			<div class="right">
 				<div id="date"><?=$currentDate?></div>
 				<div id="summary"></div>
+				<div id ="ekleme"><?= $location ?></div>
 			</div>
 			
 		</div>
@@ -135,6 +176,7 @@ $currentDate = date('l, F j, Y');
 	"sun": "sun",
 	"rain": "rain", 
 	"heat": "sun",
+	"mild": "sun"
   }
 
   
